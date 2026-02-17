@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acompanhamento de Inscrição</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header>
+    <h1>📊 Acompanhamento de Inscrição</h1>
+    <p>Confira o status da sua inscrição</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <div class="info-box">
+        <h2 class="section-title">Identificação da Inscrição</h2>
+        <p><strong>ID da Inscrição:</strong> <span class="accent-id">#<%= inscription.id %></span></p>
+      </div>
+
+      <h2>Informações Pessoais</h2>
+      <div class="info-box">
+        <p><strong>Nome:</strong>
+          <%= inscription.name %>
+        </p>
+        <p><strong>Telefone (WhatsApp):</strong>
+          <%= inscription.phone %>
+        </p>
+        <% if(inscription.age) { %>
+          <p><strong>Idade:</strong>
+            <%= inscription.age %> anos
+          </p>
+          <% } %>
+      </div>
+
+      <h2>Informações da Inscrição</h2>
+      <div class="info-box">
+        <p><strong>Grupo/Líder:</strong>
+          <%= inscription.leader_name || inscription.link_name %>
+        </p>
+        <p><strong>Forma de Pagamento:</strong>
+          <% if(inscription.payment_method==='PIX' ) { %>
+            💳 PIX
+            <% } else if(inscription.payment_method==='Presencial' ) { %>
+              💰 Presencial
+              <% } else { %>
+                <%= inscription.payment_method %>
+                  <% } %>
+        </p>
+        <p><strong>Data do Pagamento:</strong>
+          <% if(inscription.payment_date) { %>
+            <%= new Date(inscription.payment_date).toLocaleDateString('pt-BR') %>
+              <% } else { %>
+                <em>Não informado</em>
+                <% } %>
+        </p>
+      </div>
+
+      <h2>Status da Inscrição</h2>
+      <div class="info-box">
+        <p><strong>Status Atual:</strong></p>
+        <% if(inscription.status==='PENDENTE' ) { %>
+          <span class="status-badge status-pendente">PENDENTE</span>
+          <p class="status-text-pendente">⏳ Sua inscrição está aguardando confirmação do líder responsável.</p>
+          <% } else if(inscription.status==='CONFIRMADO' ) { %>
+            <span class="status-badge status-confirmado">CONFIRMADO</span>
+            <p class="status-text-confirmado">✅ Sua inscrição foi confirmada! Parabéns!</p>
+            <% } else { %>
+              <span class="status-badge">
+                <%= inscription.status %>
+              </span>
+              <% } %>
+      </div>
+
+      <div class="center">
+        <a href="/inscrever" class="btn btn-secondary">← Voltar ao Início</a>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Sistema de Inscrição de Eventos. Todos os direitos reservados.</p>
+  </footer>
+</body>
+
+</html>

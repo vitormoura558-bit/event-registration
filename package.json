@@ -1,0 +1,35 @@
+{
+  "name": "event-registration",
+  "version": "1.0.0",
+  "description": "Sistema de inscrição com confirmação de líderes",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "start:admin": "node admin-start.js",
+    "test:webhook": "node scripts/test_webhook.js",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "cookie-parser": "^1.4.7",
+    "csurf": "^1.2.2",
+    "dotenv": "^16.3.1",
+    "ejs": "^3.1.9",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.7.0",
+    "express-session": "^1.19.0",
+    "mercadopago": "^2.4.0",
+    "sqlite3": "^5.0.2"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "nock": "^13.3.0",
+    "puppeteer": "^24.37.3",
+    "supertest": "^6.3.0"
+  },
+  "type": "commonjs",
+  "jest": {
+    "testEnvironment": "node"
+  }
+}

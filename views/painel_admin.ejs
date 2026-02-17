@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Admin - Sistema de Eventos</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-box {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-box h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.9rem;
+      opacity: 0.9;
+      color: white;
+    }
+
+    .stat-box .number {
+      font-size: 2.5rem;
+      font-weight: bold;
+    }
+
+    .stat-pendente {
+      background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
+    }
+
+    .stat-confirmado {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>🔐 Painel Administrativo</h1>
+    <p>Visualizar todas as inscrições de eventos</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <div class="admin-stats">
+        <div class="stat-box">
+          <h3>Total de Inscrições</h3>
+          <div class="number">
+            <%= inscriptions.length %>
+          </div>
+        </div>
+        <div class="stat-box stat-pendente">
+          <h3>Pendentes</h3>
+          <div class="number">
+            <%= inscriptions.filter(i=> i.status === 'PENDENTE').length %>
+          </div>
+        </div>
+        <div class="stat-box stat-confirmado">
+          <h3>Confirmadas</h3>
+          <div class="number">
+            <%= inscriptions.filter(i=> i.status === 'CONFIRMADO').length %>
+          </div>
+        </div>
+      </div>
+
+      <% if(inscriptions.length===0) { %>
+        <div class="message-box message-info">
+          <p>Nenhuma inscrição encontrada no sistema.</p>
+        </div>
+        <% } else { %>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th class="col-phone">Telefone</th>
+                  <th class="col-leader">Líder/Grupo</th>
+                  <th class="col-payment">Pagamento</th>
+                  <th class="col-date">Data Pgto</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% inscriptions.forEach(function(i){ %>
+                  <tr>
+                    <td><strong>#<%= i.id %></strong></td>
+                    <td>
+                      <%= i.name %>
+                    </td>
+                    <td class="col-phone"><a href="https://wa.me/<%= i.phone.replace(/\D/g, '') %>" target="_blank">
+                        <%= i.phone %>
+                      </a></td>
+                    <td class="col-leader">
+                      <%= i.leader_name || i.link_name %>
+                    </td>
+                    <td>
+                      <% if(i.payment_method==='PIX' ) { %>
+                        💳 PIX
+                        <% } else if(i.payment_method==='Presencial' ) { %>
+                          💰 Presencial
+                          <% } else { %>
+                            <%= i.payment_method %>
+                              <% } %>
+                    </td>
+                    <td>
+                      <%= i.payment_date ? new Date(i.payment_date).toLocaleDateString('pt-BR') : '-' %>
+                    </td>
+                    <td>
+                      <% if(i.status==='PENDENTE' ) { %>
+                        <span class="status-badge status-pendente">PENDENTE</span>
+                        <% } else { %>
+                          <span class="status-badge status-confirmado">CONFIRMADO</span>
+                          <% } %>
+                    </td>
+                  </tr>
+                  <% }); %>
+              </tbody>
+            </table>
+          </div>
+          <% } %>
+
+            <div style="margin-top: 2rem; text-align: center;">
+              <a href="/inscrever" class="btn btn-secondary">← Voltar ao Início</a>
+            </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Sistema de Inscrição de Eventos. Todos os direitos reservados.</p>
+  </footer>
+</body>
+
+</html>

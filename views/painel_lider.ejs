@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel do Líder - Sistema de Eventos</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header>
+    <h1>👥 Painel do Líder</h1>
+    <p>Gerenciar inscrições do grupo</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <% if(inscriptions.length===0) { %>
+        <div class="message-box message-info">
+          <p>Nenhuma inscrição encontrada para este grupo.</p>
+        </div>
+        <% } else { %>
+          <div class="count-info">
+            <p class="muted-large">
+              <strong>
+                <%= inscriptions.length %>
+              </strong> inscrição(ões) encontrada(s)
+            </p>
+          </div>
+
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nome</th>
+                  <th class="col-phone">Telefone</th>
+                  <th class="col-payment">Pagamento</th>
+                  <th class="col-date">Data Pgto</th>
+                  <th>Status</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% inscriptions.forEach(function(i){ %>
+                  <tr>
+                    <td>#<%= i.id %>
+                    </td>
+                    <td><strong>
+                        <%= i.name %>
+                      </strong></td>
+                    <td class="col-phone"><a href="https://wa.me/<%= i.phone.replace(/\D/g, '') %>" target="_blank">
+                        <%= i.phone %>
+                      </a></td>
+                    <td>
+                      <% if(i.payment_method==='PIX' ) { %>
+                        💳 PIX
+                        <% } else if(i.payment_method==='Presencial' ) { %>
+                          💰 Presencial
+                          <% } else { %>
+                            <%= i.payment_method %>
+                              <% } %>
+                    </td>
+                    <td class="col-date">
+                      <%= i.payment_date ? new Date(i.payment_date).toLocaleDateString('pt-BR') : '-' %>
+                    </td>
+                    <td>
+                      <% if(i.status==='PENDENTE' ) { %>
+                        <span class="status-badge status-pendente">PENDENTE</span>
+                        <% } else { %>
+                          <span class="status-badge status-confirmado">CONFIRMADO</span>
+                          <% } %>
+                    </td>
+                    <td>
+                      <% if(i.status==='PENDENTE' ) { %>
+                        <form method="POST" action="/painel/lider/<%= i.leader_id %>/confirmar/<%= i.id %>"
+                          class="inline-form">
+                          <button type="submit" class="btn btn-success small-btn">✓ Confirmar</button>
+                        </form>
+                        <% } else { %>
+                          <span class="confirmed-label">✓ Confirmado</span>
+                          <% } %>
+                    </td>
+                  </tr>
+                  <% }); %>
+              </tbody>
+            </table>
+          </div>
+          <% } %>
+
+            <div class="center">
+              <a href="/inscrever" class="btn btn-secondary">← Voltar ao Início</a>
+            </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Sistema de Inscrição de Eventos. Todos os direitos reservados.</p>
+  </footer>
+</body>
+
+</html>

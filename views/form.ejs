@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscrição - Sistema de Eventos</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header>
+    <h1>📋 Sistema de Inscrição</h1>
+    <p>Preencha o formulário abaixo para se inscrever no evento</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h1>Formulário de Inscrição</h1>
+      <p style="color: #666; margin-bottom: 1.5rem;">Todos os campos marcados com <span style="color: #dc3545;">*</span>
+        são obrigatórios.</p>
+
+      <form action="/inscrever" method="POST">
+        <div class="form-group">
+          <label for="name">Nome Completo <span style="color: #dc3545;">*</span></label>
+          <input type="text" id="name" name="name" required placeholder="Digite seu nome completo">
+        </div>
+
+        <div class="form-group">
+          <label for="age">Idade</label>
+          <input type="number" id="age" name="age" placeholder="Ex: 25">
+        </div>
+
+        <div class="form-group">
+          <label for="phone">Telefone (WhatsApp) <span style="color: #dc3545;">*</span></label>
+          <input type="text" id="phone" name="phone" required placeholder="Ex: (85) 99999-9999">
+        </div>
+
+        <div class="form-group">
+          <label for="link_name">Link / Grupo / Líder <span style="color: #dc3545;">*</span></label>
+          <select id="link_name" name="link_name" required>
+            <option value="">Selecione um grupo...</option>
+            <% leaders.forEach(function(l){ %>
+              <option value="<%= l.link_name %>">
+                <%= l.name %> - <%= l.link_name %>
+              </option>
+              <% }); %>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="payment_method">Forma de Pagamento <span style="color: #dc3545;">*</span></label>
+            <select id="payment_method" name="payment_method" required>
+              <option value="">Selecione uma forma...</option>
+              <option value="PIX">PIX</option>
+              <option value="MercadoPago">Mercado Pago</option>
+              <option value="Presencial">Presencial</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="payment_date">Data do Pagamento</label>
+            <input type="date" id="payment_date" name="payment_date">
+          </div>
+        </div>
+
+        <button type="submit" class="btn">✓ Enviar Inscrição</button>
+      </form>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Sistema de Inscrição de Eventos. Todos os direitos reservados.</p>
+  </footer>
+</body>
+
+</html>

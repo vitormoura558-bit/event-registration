@@ -1,0 +1,242 @@
+[
+  {
+    "url": "http://localhost:3000/",
+    "viewport": {
+      "name": "mobile",
+      "width": 375,
+      "height": 667
+    },
+    "metrics": {
+      "innerWidth": 375,
+      "innerHeight": 667,
+      "scrollWidth": 375,
+      "scrollHeight": 1432,
+      "containerWidth": 375
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\__mobile_375x667.png"
+  },
+  {
+    "url": "http://localhost:3000/inscrever",
+    "viewport": {
+      "name": "mobile",
+      "width": 375,
+      "height": 667
+    },
+    "metrics": {
+      "innerWidth": 375,
+      "innerHeight": 667,
+      "scrollWidth": 375,
+      "scrollHeight": 1432,
+      "containerWidth": 375
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_inscrever_mobile_375x667.png"
+  },
+  {
+    "url": "http://localhost:3000/acompanhamento/1",
+    "viewport": {
+      "name": "mobile",
+      "width": 375,
+      "height": 667
+    },
+    "metrics": {
+      "innerWidth": 375,
+      "innerHeight": 667,
+      "scrollWidth": 375,
+      "scrollHeight": 1321,
+      "containerWidth": 375
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_acompanhamento_1_mobile_375x667.png"
+  },
+  {
+    "url": "http://localhost:3000/painel/lider/1",
+    "viewport": {
+      "name": "mobile",
+      "width": 375,
+      "height": 667
+    },
+    "metrics": {
+      "innerWidth": 375,
+      "innerHeight": 667,
+      "scrollWidth": 375,
+      "scrollHeight": 871,
+      "containerWidth": 375
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_painel_lider_1_mobile_375x667.png"
+  },
+  {
+    "url": "http://localhost:3000/painel/admin",
+    "viewport": {
+      "name": "mobile",
+      "width": 375,
+      "height": 667
+    },
+    "metrics": {
+      "innerWidth": 375,
+      "innerHeight": 667,
+      "scrollWidth": 375,
+      "scrollHeight": 1471,
+      "containerWidth": 375
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_painel_admin_mobile_375x667.png"
+  },
+  {
+    "url": "http://localhost:3000/",
+    "viewport": {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024
+    },
+    "metrics": {
+      "innerWidth": 768,
+      "innerHeight": 1024,
+      "scrollWidth": 768,
+      "scrollHeight": 1260,
+      "containerWidth": 768
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\__tablet_768x1024.png"
+  },
+  {
+    "url": "http://localhost:3000/inscrever",
+    "viewport": {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024
+    },
+    "metrics": {
+      "innerWidth": 768,
+      "innerHeight": 1024,
+      "scrollWidth": 768,
+      "scrollHeight": 1260,
+      "containerWidth": 768
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_inscrever_tablet_768x1024.png"
+  },
+  {
+    "url": "http://localhost:3000/acompanhamento/1",
+    "viewport": {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024
+    },
+    "metrics": {
+      "innerWidth": 768,
+      "innerHeight": 1024,
+      "scrollWidth": 768,
+      "scrollHeight": 1188,
+      "containerWidth": 768
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_acompanhamento_1_tablet_768x1024.png"
+  },
+  {
+    "url": "http://localhost:3000/painel/lider/1",
+    "viewport": {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024
+    },
+    "metrics": {
+      "innerWidth": 768,
+      "innerHeight": 1024,
+      "scrollWidth": 768,
+      "scrollHeight": 1024,
+      "containerWidth": 768
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_painel_lider_1_tablet_768x1024.png"
+  },
+  {
+    "url": "http://localhost:3000/painel/admin",
+    "viewport": {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024
+    },
+    "metrics": {
+      "innerWidth": 768,
+      "innerHeight": 1024,
+      "scrollWidth": 768,
+      "scrollHeight": 1024,
+      "containerWidth": 768
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_painel_admin_tablet_768x1024.png"
+  },
+  {
+    "url": "http://localhost:3000/",
+    "viewport": {
+      "name": "desktop",
+      "width": 1366,
+      "height": 768
+    },
+    "metrics": {
+      "innerWidth": 1366,
+      "innerHeight": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 1195,
+      "containerWidth": 1000
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\__desktop_1366x768.png"
+  },
+  {
+    "url": "http://localhost:3000/inscrever",
+    "viewport": {
+      "name": "desktop",
+      "width": 1366,
+      "height": 768
+    },
+    "metrics": {
+      "innerWidth": 1366,
+      "innerHeight": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 1195,
+      "containerWidth": 1000
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_inscrever_desktop_1366x768.png"
+  },
+  {
+    "url": "http://localhost:3000/acompanhamento/1",
+    "viewport": {
+      "name": "desktop",
+      "width": 1366,
+      "height": 768
+    },
+    "metrics": {
+      "innerWidth": 1366,
+      "innerHeight": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 1254,
+      "containerWidth": 1000
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_acompanhamento_1_desktop_1366x768.png"
+  },
+  {
+    "url": "http://localhost:3000/painel/lider/1",
+    "viewport": {
+      "name": "desktop",
+      "width": 1366,
+      "height": 768
+    },
+    "metrics": {
+      "innerWidth": 1366,
+      "innerHeight": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 871,
+      "containerWidth": 1000
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_painel_lider_1_desktop_1366x768.png"
+  },
+  {
+    "url": "http://localhost:3000/painel/admin",
+    "viewport": {
+      "name": "desktop",
+      "width": 1366,
+      "height": 768
+    },
+    "metrics": {
+      "innerWidth": 1366,
+      "innerHeight": 768,
+      "scrollWidth": 1366,
+      "scrollHeight": 1124,
+      "containerWidth": 1000
+    },
+    "screenshot": "C:\\Users\\PC\\Downloads\\Backup_Site_One\\Backup_Site_One\\event-registration\\screenshots\\_painel_admin_desktop_1366x768.png"
+  }
+]

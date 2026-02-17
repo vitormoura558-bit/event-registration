@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Líder - Sistema de Eventos</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header>
+    <h1>👥 Login do Líder</h1>
+    <p>Autentique-se com o link do seu grupo</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <% if (error) { %>
+        <div class="message-box message-error">
+          <p>
+            <%= error %>
+          </p>
+        </div>
+        <% } %>
+
+          <form action="/leader/login" method="POST">
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+            <div class="form-group">
+              <label for="link_name">Link do Grupo (link_name)</label>
+              <input type="text" id="link_name" name="link_name" required placeholder="ex: grupo-a">
+            </div>
+
+            <div class="form-group">
+              <label for="password">Senha do Líder</label>
+              <input type="password" id="password" name="password" required>
+            </div>
+
+            <button type="submit" class="btn">Entrar</button>
+          </form>
+
+          <div class="mt-1">
+            <a href="/login" class="btn btn-secondary">Login Admin</a>
+          </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Sistema de Inscrição de Eventos.</p>
+  </footer>
+</body>
+
+</html>

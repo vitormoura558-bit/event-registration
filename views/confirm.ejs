@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscrição Recebida - Sistema de Eventos</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+  <header>
+    <h1>✅ Inscrição Recebida!</h1>
+    <p>Sua inscrição foi enviada com sucesso</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <div class="message-box message-success">
+        <h2 class="no-margin-top">Parabéns!</h2>
+        <p class="lead-text">Sua inscrição foi registrada com sucesso em nosso sistema.</p>
+      </div>
+
+      <div class="info-box">
+        <p><strong>Status da Inscrição:</strong> <span class="status-badge status-pendente">PENDENTE</span></p>
+      </div>
+
+      <h2>Próximos Passos</h2>
+
+      <div class="info-box">
+        <h3 class="section-title">1. Contato com o Líder</h3>
+        <p>O líder responsável pelo seu grupo será notificado sobre sua inscrição. Você também pode entrar em contato
+          direto:</p>
+        <a href="https://wa.me/<%= leader_whatsapp %>" target="_blank" class="btn inline-btn">
+          💬 Enviar Mensagem no WhatsApp
+        </a>
+      </div>
+
+      <% if (typeof mp_link !=='undefined' && mp_link) { %>
+        <div class="info-box">
+          <h3 class="section-title">Pagamento</h3>
+          <p>Finalize o pagamento pelo Mercado Pago clicando no botão abaixo:</p>
+          <a href="<%= mp_link %>" target="_blank" class="btn inline-btn btn-pay">💳 Pagar com Mercado Pago</a>
+        </div>
+        <% } %>
+
+          <div class="info-box">
+            <h3 class="section-title">2. Acompanhar Inscrição</h3>
+            <p>Você pode acompanhar o status da sua inscrição a qualquer momento clicando no botão abaixo:</p>
+            <a href="/acompanhamento/<%= inscription_id %>" class="btn inline-btn">📊 Acompanhar Inscrição</a>
+          </div>
+
+          <div class="center">
+            <a href="/inscrever" class="btn btn-secondary">← Voltar ao Início</a>
+          </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>&copy; 2026 Sistema de Inscrição de Eventos. Todos os direitos reservados.</p>
+  </footer>
+</body>
+
+</html>
