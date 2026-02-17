@@ -5,7 +5,7 @@ const MercadoPagoConfig = MP.default || MP.MercadoPagoConfig;
 const mpConfig = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || '' });
 const mpPreference = new MP.Preference(mpConfig);
 const publicRouter = express.Router();
-const adminRouter = express.Router();
+
 // Login admin
 publicRouter.post('/login', (req, res) => {
   const db = req.db;
@@ -107,44 +107,4 @@ publicRouter.get('/acompanhamento/:id', (req, res) => {
   });
 });
 
-// --- Middlewares de proteção ---
-function protectAdmin(req, res, next) {
-  if (req.session && req.session.user && req.session.user.role === 'admin') return next();
-  return res.redirect('/login');
-}
-function protectLeader(req, res, next) {
-  if (req.session && req.session.leader) return next();
-  return res.redirect('/leader/login');
-}
-
-// --- Admin routes ---
-// Painel do líder
-adminRouter.get('/painel/lider/:id', protectLeader, (req, res) => {
-  const db = req.db;
-  const leaderId = req.params.id;
-  db.all('SELECT * FROM inscriptions WHERE leader_id = ? ORDER BY created_at DESC', [leaderId], (err, rows) => {
-    if (err) console.error(err.message);
-    res.render('painel_lider', { inscriptions: rows });
-  });
-});
-
-// Confirmar inscrição
-adminRouter.post('/painel/lider/:id/confirmar/:inscriptionId', protectLeader, (req, res) => {
-  const db = req.db;
-  const inscriptionId = req.params.inscriptionId;
-  db.run("UPDATE inscriptions SET status = 'CONFIRMADO' WHERE id = ?", [inscriptionId], function (err) {
-    if (err) console.error(err.message);
-    res.redirect('back');
-  });
-});
-
-// Painel admin geral
-adminRouter.get('/painel/admin', protectAdmin, (req, res) => {
-  const db = req.db;
-  db.all('SELECT i.*, l.name AS leader_name FROM inscriptions i LEFT JOIN leaders l ON i.leader_id = l.id ORDER BY created_at DESC', [], (err, rows) => {
-    if (err) console.error(err.message);
-    res.render('painel_admin', { inscriptions: rows });
-  });
-});
-
-module.exports = { publicRouter, adminRouter, protectAdmin, protectLeader };
+module.exports = publicRouter;

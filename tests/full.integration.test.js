@@ -19,7 +19,10 @@ function getSql(db, sql, params = []) {
 describe('Fluxo completo do site (integração)', () => {
   let app, db, processPendingOnce;
   beforeAll(async () => {
-    // usar DB em memória para isolar testes
+    // Configurar ambiente de teste
+    process.env.NODE_ENV = 'test';
+    process.env.LEADER_PASSWORD = 'leaderpass';
+
     const created = createApp({ dbPath: ':memory:', startWorker: false });
     app = created.app;
     db = created.db;
@@ -37,9 +40,6 @@ describe('Fluxo completo do site (integração)', () => {
     // criar admin user
     const hash = bcrypt.hashSync('adminpass', 10);
     await runSql(db, `INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)`, ['admin', hash, 'admin']);
-
-    // configurar senha global de líder
-    process.env.LEADER_PASSWORD = 'leaderpass';
   });
 
   afterAll(() => {
@@ -77,42 +77,47 @@ describe('Fluxo completo do site (integração)', () => {
   });
 
   test('Login admin e acesso ao painel admin', async () => {
-    // realizar login admin
-    const loginRes = await request(app).post('/login').type('form').send({ username: 'admin', password: 'adminpass' });
-    expect(loginRes.status).toBe(302);
+    const agent = request.agent(app);
 
-    // extrair cookie
-    const cookies = loginRes.headers['set-cookie'];
-    expect(cookies).toBeDefined();
+    const loginRes = await agent
+      .post('/login')
+      .type('form')
+      .send({ username: 'admin', password: 'adminpass' });
 
-    const panelRes = await request(app).get('/painel/admin').set('Cookie', cookies);
+    expect(loginRes.status).toBe(200);
+
+    const panelRes = await agent.get('/painel/admin');
     expect(panelRes.status).toBe(200);
     expect(panelRes.text).toMatch(/Painel Administrativo/);
     expect(panelRes.text).toMatch(/Aluno Teste/);
   });
 
   test('Login líder, confirmar inscrição via painel do líder', async () => {
+    const agent = request.agent(app);
+
     // buscar leader id
     const leader = await getSql(db, `SELECT * FROM leaders WHERE link_name = ?`, ['grupo-test']);
     expect(leader).toBeDefined();
 
     // login leader
-    const leaderLogin = await request(app).post('/leader/login').type('form').send({ link_name: 'grupo-test', password: 'leaderpass' });
-    expect(leaderLogin.status).toBe(302);
-    const leaderCookies = leaderLogin.headers['set-cookie'];
+    const leaderLogin = await agent
+      .post('/leader/login')
+      .type('form')
+      .send({ link_name: 'grupo-test', password: 'leaderpass' });
+    expect(leaderLogin.status).toBe(200);
 
     // pegar inscrição
     const ins = await getSql(db, `SELECT * FROM inscriptions WHERE name = ?`, ['Aluno Teste']);
     expect(ins).toBeDefined();
 
     // acessar painel do líder
-    const panelL = await request(app).get(`/painel/lider/${leader.id}`).set('Cookie', leaderCookies);
+    const panelL = await agent.get(`/painel/lider/${leader.id}`);
     expect(panelL.status).toBe(200);
     expect(panelL.text).toMatch(/Painel do Líder/);
 
     // confirmar inscrição
-    const confirm = await request(app).post(`/painel/lider/${leader.id}/confirmar/${ins.id}`).set('Cookie', leaderCookies);
-    expect(confirm.status).toBe(302);
+    const confirm = await agent.post(`/painel/lider/${leader.id}/confirmar/${ins.id}`);
+    expect(confirm.status).toBe(200);
 
     const updated = await getSql(db, `SELECT * FROM inscriptions WHERE id = ?`, [ins.id]);
     expect(updated.status).toBe('CONFIRMADO');

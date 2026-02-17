@@ -122,15 +122,19 @@ function createApp(options = {}) {
     max: 10, // 10 tentativas por IP
     message: 'Muitas tentativas de login, tente novamente mais tarde.'
   });
+// Importar os novos roteadores
+const publicRouter = require('./routes/public.routes');
+const leaderRouter = require('./routes/leader.routes');
+const adminRouter = require('./routes/admin.routes');
 
-  // Carregar routers (as rotas usam req.db)
-  const { publicRouter, adminRouter, protectAdmin, protectLeader } = require('./routes/routes');
-  // Aplicar rate limit apenas nas rotas de login
-  app.use('/login', loginLimiter);
-  app.use('/leader/login', loginLimiter);
-  // Usar routers no mesmo app
-  app.use('/', publicRouter);
-  app.use('/', adminRouter);
+// Aplicar rate limit apenas nas rotas de login (permanece)
+app.use('/login', loginLimiter);
+app.use('/leader/login', loginLimiter);
+
+// Usar os roteadores
+app.use('/', publicRouter);
+app.use('/', leaderRouter);
+app.use('/', adminRouter);
 
   // Endpoint para receber notificações do Mercado Pago (webhook)
   app.post('/mp/webhook', (req, res) => {
