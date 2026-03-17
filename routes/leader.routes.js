@@ -2,8 +2,8 @@ const express = require('express');
 const { protectLeader } = require('../middleware/auth');
 const leaderRouter = express.Router();
 
-// Aplica proteção de líder a todas as rotas deste roteador
-leaderRouter.use(protectLeader);
+// Aplica proteção apenas nas rotas do painel do líder
+leaderRouter.use('/painel/lider', protectLeader);
 
 // Painel do líder
 leaderRouter.get('/painel/lider/:id', (req, res) => {
@@ -36,12 +36,27 @@ leaderRouter.post('/painel/lider/:id/confirmar/:inscriptionId', (req, res) => {
       return res.status(403).send('Você não tem permissão para confirmar esta inscrição');
     }
 
-    db.run("UPDATE inscriptions SET status = 'CONFIRMADO' WHERE id = ?", [inscriptionId], function (err) {
+    const paidAt = new Date().toISOString();
+    db.run("UPDATE inscriptions SET status = 'CONFIRMADO', payment_status = 'PAID', paid_at = COALESCE(paid_at, ?) WHERE id = ?", [paidAt, inscriptionId], function (err) {
       if (err) {
         console.error(err.message);
         return res.status(500).send('Erro ao confirmar');
       }
-      res.redirect(req.get('Referrer') || '/');
+
+      db.run(
+        `UPDATE payments
+         SET status = 'PAID', paid_at = COALESCE(paid_at, ?), updated_at = CURRENT_TIMESTAMP
+         WHERE inscription_id = ?`,
+        [paidAt, inscriptionId],
+        (paymentErr) => {
+          if (paymentErr) {
+            console.error(paymentErr.message);
+            return res.status(500).send('Erro ao confirmar pagamento');
+          }
+
+          res.redirect(req.get('Referrer') || '/');
+        }
+      );
     });
   });
 });

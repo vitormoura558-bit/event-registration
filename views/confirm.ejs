@@ -23,6 +23,7 @@
 
       <div class="info-box">
         <p><strong>Status da Inscrição:</strong> <span class="status-badge status-pendente">PENDENTE</span></p>
+        <p><strong>Status do Pagamento:</strong> <span class="status-badge status-pendente"><%= payment_status || 'PENDING' %></span></p>
       </div>
 
       <h2>Próximos Passos</h2>
@@ -42,7 +43,12 @@
           <p>Finalize o pagamento pelo Mercado Pago clicando no botão abaixo:</p>
           <a href="<%= mp_link %>" target="_blank" class="btn inline-btn btn-pay">💳 Pagar com Mercado Pago</a>
         </div>
-        <% } %>
+      <% } else if (payment_method === 'PIX' || payment_method === 'Presencial') { %>
+        <div class="info-box">
+          <h3 class="section-title">Pagamento</h3>
+          <p>Seu pagamento ficará aguardando conferência manual do líder ou da equipe administrativa.</p>
+        </div>
+      <% } %>
 
           <div class="info-box">
             <h3 class="section-title">2. Acompanhar Inscrição</h3>

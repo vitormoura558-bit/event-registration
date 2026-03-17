@@ -21,6 +21,7 @@
         são obrigatórios.</p>
 
       <form action="/inscrever" method="POST">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <div class="form-group">
           <label for="name">Nome Completo <span style="color: #dc3545;">*</span></label>
           <input type="text" id="name" name="name" required placeholder="Digite seu nome completo">

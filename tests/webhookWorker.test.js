@@ -1,83 +1,115 @@
-const sqlite3 = require('sqlite3').verbose();
 const { processPendingOnce } = require('../lib/webhookWorker');
-const util = require('util');
+const { createTestContext, destroyTestContext, getDbHelpers, waitForDatabaseReady } = require('./helpers/db');
 
-function runSql(db, sql, params = []) {
-  return new Promise((resolve, reject) => db.run(sql, params, function (err) {
-    if (err) return reject(err);
-    resolve(this);
-  }));
-}
-
-function getSql(db, sql, params = []) {
-  return new Promise((resolve, reject) => db.get(sql, params, (err, row) => {
-    if (err) return reject(err);
-    resolve(row);
-  }));
-}
-
-function allSql(db, sql, params = []) {
-  return new Promise((resolve, reject) => db.all(sql, params, (err, rows) => {
-    if (err) return reject(err);
-    resolve(rows);
-  }));
-}
-
-describe('webhookWorker', () => {
+describe('webhook worker', () => {
+  let context;
   let db;
+
   beforeEach(async () => {
-    db = new sqlite3.Database(':memory:');
-    await runSql(db, `CREATE TABLE leaders (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, whatsapp TEXT, link_name TEXT)`);
-    await runSql(db, `CREATE TABLE inscriptions (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, age INTEGER, phone TEXT, link_name TEXT, leader_id INTEGER, mp_preference_id TEXT, mp_payment_id TEXT, payment_method TEXT, payment_date TEXT, status TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`);
-    await runSql(db, `CREATE TABLE webhook_queue (id INTEGER PRIMARY KEY AUTOINCREMENT, payment_id TEXT, payload TEXT, received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, processed INTEGER DEFAULT 0, attempts INTEGER DEFAULT 0, processed_at TIMESTAMP, result_status TEXT)`);
-
-    // criar inscrição com id 1
-    await runSql(db, `INSERT INTO inscriptions (id, name, status) VALUES (?, ?, ?)`, [1, 'Test User', 'PENDENTE']);
+    context = createTestContext();
+    db = getDbHelpers(context.db);
+    await waitForDatabaseReady(context.db);
   });
 
-  afterEach(() => {
-    db.close();
+  afterEach(async () => {
+    await destroyTestContext(context);
   });
 
-  test('processPendingOnce confirma inscrição quando pagamento aprovado', async () => {
-    // enfileirar webhook com payment_id = '123'
-    await runSql(db, `INSERT INTO webhook_queue (payment_id, payload) VALUES (?, ?)`, ['123', JSON.stringify({})]);
+  test('marks Mercado Pago payment as paid and confirms inscription', async () => {
+    const inscriptionInsert = await db.run(
+      `INSERT INTO inscriptions (name, phone, link_name, leader_id, payment_method, payment_status, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ['Pessoa MP', '11999999999', 'grupo-mp', 1, 'MercadoPago', 'AWAITING_PAYMENT', 'PENDENTE']
+    );
+    const inscriptionId = inscriptionInsert.lastID;
 
-    // mock mpClient
+    await db.run(
+      `INSERT INTO payments (inscription_id, provider, method, amount, status, external_reference, provider_preference_id, payload, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      [inscriptionId, 'MERCADO_PAGO', 'MercadoPago', 50, 'AWAITING_PAYMENT', String(inscriptionId), 'pref-123', '{}']
+    );
+
+    await db.run(
+      'INSERT INTO webhook_queue (payment_id, payload) VALUES (?, ?)',
+      ['pay-123', JSON.stringify({ data: { id: 'pay-123' } })]
+    );
+
     const mpClient = {
-      get: async ({ id }) => {
-        expect(id).toBe('123');
-        return { external_reference: '1', status: 'approved' };
-      }
+      get: jest.fn().mockResolvedValue({
+        id: 'pay-123',
+        external_reference: String(inscriptionId),
+        status: 'approved'
+      })
     };
 
-    await processPendingOnce(db, mpClient);
+    await processPendingOnce(context.db, mpClient);
 
-    const inscription = await getSql(db, `SELECT * FROM inscriptions WHERE id = ?`, [1]);
+    const inscription = await db.get('SELECT * FROM inscriptions WHERE id = ?', [inscriptionId]);
+    const payment = await db.get('SELECT * FROM payments WHERE inscription_id = ?', [inscriptionId]);
+    const queue = await db.get('SELECT * FROM webhook_queue WHERE payment_id = ?', ['pay-123']);
+
     expect(inscription.status).toBe('CONFIRMADO');
-
-    const queueRow = await getSql(db, `SELECT * FROM webhook_queue WHERE payment_id = ?`, ['123']);
-    expect(queueRow.processed).toBe(1);
-    expect(queueRow.result_status).toBe('confirmed');
+    expect(inscription.payment_status).toBe('PAID');
+    expect(payment.status).toBe('PAID');
+    expect(payment.provider_reference_id).toBe('pay-123');
+    expect(queue.processed).toBe(1);
+    expect(queue.result_status).toBe('confirmed');
   });
 
-  test('processPendingOnce atualiza status quando payment diferente de approved', async () => {
-    await runSql(db, `INSERT INTO webhook_queue (payment_id, payload) VALUES (?, ?)`, ['456', JSON.stringify({})]);
+  test('updates payment status without confirming inscription when payment is pending', async () => {
+    const inscriptionInsert = await db.run(
+      `INSERT INTO inscriptions (name, phone, link_name, leader_id, payment_method, payment_status, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ['Pessoa MP Pendente', '11999999999', 'grupo-mp', 1, 'MercadoPago', 'AWAITING_PAYMENT', 'PENDENTE']
+    );
+    const inscriptionId = inscriptionInsert.lastID;
+
+    await db.run(
+      `INSERT INTO payments (inscription_id, provider, method, amount, status, external_reference, payload, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      [inscriptionId, 'MERCADO_PAGO', 'MercadoPago', 50, 'AWAITING_PAYMENT', String(inscriptionId), '{}']
+    );
+
+    await db.run(
+      'INSERT INTO webhook_queue (payment_id, payload) VALUES (?, ?)',
+      ['pay-456', JSON.stringify({ data: { id: 'pay-456' } })]
+    );
 
     const mpClient = {
-      get: async ({ id }) => {
-        expect(id).toBe('456');
-        return { external_reference: '1', status: 'pending' };
-      }
+      get: jest.fn().mockResolvedValue({
+        id: 'pay-456',
+        external_reference: String(inscriptionId),
+        status: 'pending'
+      })
     };
 
-    await processPendingOnce(db, mpClient);
+    await processPendingOnce(context.db, mpClient);
 
-    const inscription = await getSql(db, `SELECT * FROM inscriptions WHERE id = ?`, [1]);
-    expect(inscription.status).toBe('PENDING');
+    const inscription = await db.get('SELECT * FROM inscriptions WHERE id = ?', [inscriptionId]);
+    const payment = await db.get('SELECT * FROM payments WHERE inscription_id = ?', [inscriptionId]);
+    const queue = await db.get('SELECT * FROM webhook_queue WHERE payment_id = ?', ['pay-456']);
 
-    const queueRow = await getSql(db, `SELECT * FROM webhook_queue WHERE payment_id = ?`, ['456']);
-    expect(queueRow.processed).toBe(1);
-    expect(queueRow.result_status).toBe('pending');
+    expect(inscription.status).toBe('PENDENTE');
+    expect(inscription.payment_status).toBe('AWAITING_PAYMENT');
+    expect(payment.status).toBe('AWAITING_PAYMENT');
+    expect(queue.processed).toBe(1);
+    expect(queue.result_status).toBe('pending');
+  });
+
+  test('increments attempts when provider call fails', async () => {
+    await db.run(
+      'INSERT INTO webhook_queue (payment_id, payload) VALUES (?, ?)',
+      ['pay-error', JSON.stringify({ data: { id: 'pay-error' } })]
+    );
+
+    const mpClient = {
+      get: jest.fn().mockRejectedValue(new Error('provider unavailable'))
+    };
+
+    await processPendingOnce(context.db, mpClient);
+
+    const queue = await db.get('SELECT * FROM webhook_queue WHERE payment_id = ?', ['pay-error']);
+    expect(queue.processed).toBe(0);
+    expect(queue.attempts).toBe(1);
   });
 });

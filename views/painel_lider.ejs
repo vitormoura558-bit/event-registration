@@ -37,8 +37,9 @@
                   <th>Nome</th>
                   <th class="col-phone">Telefone</th>
                   <th class="col-payment">Pagamento</th>
+                  <th>St. Pagto</th>
                   <th class="col-date">Data Pgto</th>
-                  <th>Status</th>
+                  <th>Status Inscrição</th>
                   <th>Ação</th>
                 </tr>
               </thead>
@@ -62,8 +63,13 @@
                             <%= i.payment_method %>
                               <% } %>
                     </td>
+                    <td>
+                      <span class="status-badge <%= i.payment_status === 'PAID' ? 'status-confirmado' : 'status-pendente' %>">
+                        <%= i.payment_status || 'PENDING' %>
+                      </span>
+                    </td>
                     <td class="col-date">
-                      <%= i.payment_date ? new Date(i.payment_date).toLocaleDateString('pt-BR') : '-' %>
+                      <%= i.paid_at ? new Date(i.paid_at).toLocaleDateString('pt-BR') : (i.payment_date ? new Date(i.payment_date).toLocaleDateString('pt-BR') : '-') %>
                     </td>
                     <td>
                       <% if(i.status==='PENDENTE' ) { %>
@@ -73,13 +79,16 @@
                           <% } %>
                     </td>
                     <td>
-                      <% if(i.status==='PENDENTE' ) { %>
+                      <% if(i.status==='PENDENTE' && i.payment_status !== 'PAID') { %>
                         <form method="POST" action="/painel/lider/<%= i.leader_id %>/confirmar/<%= i.id %>"
                           class="inline-form">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                           <button type="submit" class="btn btn-success small-btn">✓ Confirmar</button>
                         </form>
-                        <% } else { %>
+                        <% } else if (i.status === 'CONFIRMADO') { %>
                           <span class="confirmed-label">✓ Confirmado</span>
+                        <% } else { %>
+                          <span class="confirmed-label">Pagamento já validado</span>
                           <% } %>
                     </td>
                   </tr>

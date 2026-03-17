@@ -72,6 +72,124 @@
             <%= inscriptions.filter(i=> i.status === 'CONFIRMADO').length %>
           </div>
         </div>
+        <div class="stat-box">
+          <h3>Total de Líderes</h3>
+          <div class="number">
+            <%= leaderCount %>
+          </div>
+        </div>
+      </div>
+
+      <% if (passwordMessage) { %>
+        <div class="message-box message-success">
+          <p><%= passwordMessage %></p>
+        </div>
+      <% } %>
+
+      <% if (passwordError) { %>
+        <div class="message-box message-error">
+          <p><%= passwordError %></p>
+        </div>
+      <% } %>
+
+      <% if (leaderMessage) { %>
+        <div class="message-box message-success">
+          <p><%= leaderMessage %></p>
+        </div>
+      <% } %>
+
+      <% if (leaderError) { %>
+        <div class="message-box message-error">
+          <p><%= leaderError %></p>
+        </div>
+      <% } %>
+
+      <div class="card" style="margin-bottom: 2rem;">
+        <h2>Senha Global dos Líderes</h2>
+        <p>
+          Status:
+          <strong><%= leaderPasswordConfigured ? 'Configurada' : 'Não configurada' %></strong>
+        </p>
+        <form action="/painel/admin/leader-password" method="POST">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="form-group">
+            <label for="leader_password">Nova senha dos líderes</label>
+            <input type="password" id="leader_password" name="leader_password" required placeholder="Digite a senha global">
+          </div>
+          <button type="submit" class="btn">Salvar senha global</button>
+        </form>
+      </div>
+
+      <div class="card" style="margin-bottom: 2rem;">
+        <h2>Gerenciar Líderes</h2>
+        <form action="/painel/admin/leaders" method="POST">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="name">Nome do líder</label>
+              <input type="text" id="name" name="name" required placeholder="Ex: João Silva">
+            </div>
+            <div class="form-group">
+              <label for="whatsapp">WhatsApp</label>
+              <input type="text" id="whatsapp" name="whatsapp" required placeholder="Ex: (11) 99999-9999">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="link_name">Link do grupo</label>
+            <input type="text" id="link_name" name="link_name" required placeholder="Ex: grupo-joao">
+          </div>
+          <button type="submit" class="btn">Cadastrar líder</button>
+        </form>
+
+        <% if (leaders.length === 0) { %>
+          <div class="message-box message-info">
+            <p>Nenhum líder cadastrado.</p>
+          </div>
+        <% } else { %>
+          <div class="table-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th class="col-phone">WhatsApp</th>
+                  <th>Link</th>
+                  <th>Inscrições</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% leaders.forEach(function(leader){ %>
+                  <tr>
+                    <td>
+                      <form action="/painel/admin/leaders/<%= leader.id %>/update" method="POST">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                        <input type="text" name="name" value="<%= leader.name %>" required>
+                    </td>
+                    <td class="col-phone">
+                        <input type="text" name="whatsapp" value="<%= leader.whatsapp %>" required>
+                    </td>
+                    <td>
+                        <input type="text" name="link_name" value="<%= leader.link_name %>" required>
+                    </td>
+                    <td><%= leader.inscription_count %></td>
+                    <td>
+                        <button type="submit" class="btn btn-secondary small-btn">Salvar</button>
+                      </form>
+                      <% if (leader.inscription_count > 0) { %>
+                        <span class="confirmed-label">Possui inscrições vinculadas</span>
+                      <% } else { %>
+                        <form action="/painel/admin/leaders/<%= leader.id %>/delete" method="POST" class="inline-form">
+                          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                          <button type="submit" class="btn btn-danger small-btn">Remover</button>
+                        </form>
+                      <% } %>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
       </div>
 
       <% if(inscriptions.length===0) { %>
@@ -88,8 +206,9 @@
                   <th class="col-phone">Telefone</th>
                   <th class="col-leader">Líder/Grupo</th>
                   <th class="col-payment">Pagamento</th>
+                  <th>St. Pagto</th>
                   <th class="col-date">Data Pgto</th>
-                  <th>Status</th>
+                  <th>Status Inscrição</th>
                 </tr>
               </thead>
               <tbody>
@@ -115,7 +234,12 @@
                               <% } %>
                     </td>
                     <td>
-                      <%= i.payment_date ? new Date(i.payment_date).toLocaleDateString('pt-BR') : '-' %>
+                      <span class="status-badge <%= i.payment_status === 'PAID' ? 'status-confirmado' : 'status-pendente' %>">
+                        <%= i.payment_status || 'PENDING' %>
+                      </span>
+                    </td>
+                    <td>
+                      <%= i.paid_at ? new Date(i.paid_at).toLocaleDateString('pt-BR') : (i.payment_date ? new Date(i.payment_date).toLocaleDateString('pt-BR') : '-') %>
                     </td>
                     <td>
                       <% if(i.status==='PENDENTE' ) { %>

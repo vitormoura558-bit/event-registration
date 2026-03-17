@@ -57,6 +57,18 @@
                 <em>Não informado</em>
                 <% } %>
         </p>
+        <p><strong>Status do Pagamento:</strong>
+          <span class="status-badge <%= inscription.payment_status === 'PAID' ? 'status-confirmado' : 'status-pendente' %>">
+            <%= inscription.payment_status || 'PENDING' %>
+          </span>
+        </p>
+        <p><strong>Pagamento confirmado em:</strong>
+          <% if(inscription.paid_at) { %>
+            <%= new Date(inscription.paid_at).toLocaleString('pt-BR') %>
+          <% } else { %>
+            <em>Aguardando confirmação</em>
+          <% } %>
+        </p>
       </div>
 
       <h2>Status da Inscrição</h2>
@@ -69,7 +81,7 @@
             <span class="status-badge status-confirmado">CONFIRMADO</span>
             <p class="status-text-confirmado">✅ Sua inscrição foi confirmada! Parabéns!</p>
             <% } else { %>
-              <span class="status-badge">
+              <span class="status-badge <%= inscription.status === 'CONFIRMADO' ? 'status-confirmado' : 'status-pendente' %>">
                 <%= inscription.status %>
               </span>
               <% } %>

@@ -5,6 +5,15 @@ const MercadoPagoConfig = MP.default || MP.MercadoPagoConfig;
 const mpConfig = new MercadoPagoConfig({ accessToken: process.env.MP_ACCESS_TOKEN || '' });
 const mpPreference = new MP.Preference(mpConfig);
 const publicRouter = express.Router();
+const DEFAULT_EVENT_PRICE = parseFloat(process.env.EVENT_PRICE || '50.00');
+
+publicRouter.get('/login', (req, res) => {
+  res.render('login', { error: null });
+});
+
+publicRouter.get('/leader/login', (req, res) => {
+  res.render('leader_login', { error: null });
+});
 
 // Login admin
 publicRouter.post('/login', (req, res) => {
@@ -25,15 +34,20 @@ publicRouter.post('/login', (req, res) => {
 publicRouter.post('/leader/login', (req, res) => {
   const db = req.db;
   const { link_name, password } = req.body;
-  // Selecione apenas as colunas necessárias, incluindo o hash da senha
-  db.get('SELECT id, link_name, password_hash FROM leaders WHERE link_name = ?', [link_name], (err, leader) => {
+  db.get('SELECT id, link_name FROM leaders WHERE link_name = ?', [link_name], (err, leader) => {
     if (err) return res.status(500).send('Erro no banco de dados');
-    if (!leader || !bcrypt.compareSync(password, leader.password_hash)) {
-      // Mensagem de erro genérica para não informar se o grupo ou a senha estão incorretos
-      return res.status(401).render('leader_login', { error: 'Grupo ou senha inválidos' });
-    }
-    req.session.leader = { id: leader.id, link_name: leader.link_name };
-    return res.redirect(`/painel/lider/${leader.id}`);
+
+    db.get('SELECT value FROM settings WHERE key = ?', ['leader_password_hash'], (settingsErr, setting) => {
+      if (settingsErr) return res.status(500).send('Erro no banco de dados');
+
+      const passwordHash = setting && setting.value;
+      if (!leader || !passwordHash || !bcrypt.compareSync(password, passwordHash)) {
+        return res.status(401).render('leader_login', { error: 'Grupo ou senha inválidos' });
+      }
+
+      req.session.leader = { id: leader.id, link_name: leader.link_name };
+      return res.redirect(`/painel/lider/${leader.id}`);
+    });
   });
 });
 
@@ -58,16 +72,41 @@ publicRouter.post('/inscrever', (req, res) => {
     if (err) console.error(err.message);
     if (!leader) return res.send('Líder não encontrado.');
 
-    db.run(`INSERT INTO inscriptions (name, age, phone, link_name, leader_id, payment_method, payment_date, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDENTE')`,
-      [name, age, phone, link_name, leader.id, payment_method, payment_date], function (err) {
+    const normalizedPaymentStatus =
+      payment_method === 'MercadoPago' || payment_method === 'MP'
+        ? 'AWAITING_PAYMENT'
+        : payment_date ? 'REPORTED' : 'PENDING';
+
+    db.run(`INSERT INTO inscriptions (name, age, phone, link_name, leader_id, payment_method, payment_date, payment_status, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDENTE')`,
+      [name, age, phone, link_name, leader.id, payment_method, payment_date, normalizedPaymentStatus], function (err) {
         if (err) console.error(err.message);
         const inscriptionId = this.lastID;
 
+        const provider = payment_method === 'MercadoPago' || payment_method === 'MP' ? 'MERCADO_PAGO' : 'MANUAL';
+        const paymentAmount = Number.isFinite(DEFAULT_EVENT_PRICE) ? DEFAULT_EVENT_PRICE : null;
+
+        db.run(
+          `INSERT INTO payments (inscription_id, provider, method, amount, status, external_reference, paid_at, payload, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+          [
+            inscriptionId,
+            provider,
+            payment_method,
+            paymentAmount,
+            normalizedPaymentStatus,
+            String(inscriptionId),
+            null,
+            JSON.stringify({ payment_date: payment_date || null })
+          ],
+          (paymentErr) => {
+            if (paymentErr) console.error('Erro criando registro de pagamento:', paymentErr.message);
+          }
+        );
+
         if (payment_method === 'MercadoPago' || payment_method === 'MP') {
-          const price = parseFloat(process.env.EVENT_PRICE || '50.00');
           const preference = {
-            items: [{ title: `Inscrição #${inscriptionId}`, quantity: 1, unit_price: price }],
+            items: [{ title: `Inscrição #${inscriptionId}`, quantity: 1, unit_price: DEFAULT_EVENT_PRICE }],
             external_reference: String(inscriptionId),
             back_urls: {
               success: `${req.protocol}://${req.get('host')}/acompanhamento/${inscriptionId}`,
@@ -82,14 +121,50 @@ publicRouter.post('/inscrever', (req, res) => {
             const prefId = response.id;
             db.run('UPDATE inscriptions SET mp_preference_id = ? WHERE id = ?', [String(prefId), inscriptionId], (err) => {
               if (err) console.error(err.message);
-              res.render('confirm', { leader_whatsapp: leader.whatsapp, inscription_id: inscriptionId, mp_link: initPoint });
+              db.run(
+                `UPDATE payments
+                 SET provider_preference_id = ?, payload = ?, updated_at = CURRENT_TIMESTAMP
+                 WHERE inscription_id = ?`,
+                [String(prefId), JSON.stringify(response), inscriptionId],
+                (paymentUpdateErr) => {
+                  if (paymentUpdateErr) console.error('Erro atualizando pagamento MP:', paymentUpdateErr.message);
+                  res.render('confirm', {
+                    leader_whatsapp: leader.whatsapp,
+                    inscription_id: inscriptionId,
+                    mp_link: initPoint,
+                    payment_method: payment_method,
+                    payment_status: normalizedPaymentStatus
+                  });
+                }
+              );
             });
           }).catch(err => {
             console.error('Erro criando preferência MP:', err);
-            res.render('confirm', { leader_whatsapp: leader.whatsapp, inscription_id: inscriptionId });
+            db.run(
+              `UPDATE payments
+               SET status = 'ERROR', payload = ?, updated_at = CURRENT_TIMESTAMP
+               WHERE inscription_id = ?`,
+              [JSON.stringify({ error: err.message || String(err) }), inscriptionId],
+              (paymentUpdateErr) => {
+                if (paymentUpdateErr) console.error('Erro marcando falha do pagamento MP:', paymentUpdateErr.message);
+                db.run('UPDATE inscriptions SET payment_status = ? WHERE id = ?', ['ERROR', inscriptionId], () => {
+                  res.render('confirm', {
+                    leader_whatsapp: leader.whatsapp,
+                    inscription_id: inscriptionId,
+                    payment_method: payment_method,
+                    payment_status: 'ERROR'
+                  });
+                });
+              }
+            );
           });
         } else {
-          res.render('confirm', { leader_whatsapp: leader.whatsapp, inscription_id: inscriptionId });
+          res.render('confirm', {
+            leader_whatsapp: leader.whatsapp,
+            inscription_id: inscriptionId,
+            payment_method: payment_method,
+            payment_status: normalizedPaymentStatus
+          });
         }
       });
   });

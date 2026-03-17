@@ -7,7 +7,7 @@
     "start": "node server.js",
     "start:admin": "node admin-start.js",
     "test:webhook": "node scripts/test_webhook.js",
-    "test": "cross-env NODE_ENV=test jest --runInBand"
+    "test": "node scripts/run-tests.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

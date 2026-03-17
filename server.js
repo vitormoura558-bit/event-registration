@@ -81,8 +81,25 @@ function createApp(options = {}) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT,
       whatsapp TEXT,
-      link_name TEXT
+      link_name TEXT,
+      password_hash TEXT
     )`);
+
+    db.all('PRAGMA table_info(leaders)', [], (err, columns) => {
+      if (err) {
+        console.error('Erro ao verificar schema de leaders:', err.message);
+        return;
+      }
+
+      const hasPasswordHash = Array.isArray(columns) && columns.some((column) => column.name === 'password_hash');
+      if (!hasPasswordHash) {
+        db.run('ALTER TABLE leaders ADD COLUMN password_hash TEXT', (alterErr) => {
+          if (alterErr) {
+            console.error('Erro ao adicionar password_hash em leaders:', alterErr.message);
+          }
+        });
+      }
+    });
 
     db.run(`CREATE TABLE IF NOT EXISTS inscriptions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,9 +112,28 @@ function createApp(options = {}) {
       mp_payment_id TEXT,
       payment_method TEXT,
       payment_date TEXT,
+      payment_status TEXT DEFAULT 'PENDING',
+      paid_at TEXT,
       status TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY(leader_id) REFERENCES leaders(id)
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS payments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      inscription_id INTEGER NOT NULL,
+      provider TEXT NOT NULL,
+      method TEXT NOT NULL,
+      amount REAL,
+      status TEXT NOT NULL,
+      external_reference TEXT,
+      provider_reference_id TEXT,
+      provider_preference_id TEXT,
+      payload TEXT,
+      paid_at TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(inscription_id) REFERENCES inscriptions(id)
     )`);
 
     db.run(`CREATE TABLE IF NOT EXISTS webhook_queue (
@@ -110,6 +146,143 @@ function createApp(options = {}) {
       processed_at TIMESTAMP,
       result_status TEXT
     )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    db.all('PRAGMA table_info(inscriptions)', [], (err, columns) => {
+      if (err) {
+        console.error('Erro ao verificar schema de inscriptions:', err.message);
+        return;
+      }
+
+      const hasMpPreferenceId = Array.isArray(columns) && columns.some((column) => column.name === 'mp_preference_id');
+      const hasMpPaymentId = Array.isArray(columns) && columns.some((column) => column.name === 'mp_payment_id');
+      const hasPaymentStatus = Array.isArray(columns) && columns.some((column) => column.name === 'payment_status');
+      const hasPaidAt = Array.isArray(columns) && columns.some((column) => column.name === 'paid_at');
+
+      const backfillPayments = () => {
+        db.run(`
+          UPDATE inscriptions
+          SET payment_status = CASE
+            WHEN status = 'CONFIRMADO' THEN 'PAID'
+            WHEN payment_method IN ('MercadoPago', 'MP') THEN 'AWAITING_PAYMENT'
+            WHEN payment_method IN ('PIX', 'Presencial') AND payment_date IS NOT NULL AND payment_date <> '' THEN 'REPORTED'
+            ELSE 'PENDING'
+          END
+          WHERE payment_status IS NULL OR payment_status = ''
+        `, (updateErr) => {
+          if (updateErr) {
+            console.error('Erro ao atualizar payment_status em inscriptions:', updateErr.message);
+            return;
+          }
+
+          db.run(`
+            INSERT INTO payments (
+              inscription_id,
+              provider,
+              method,
+              amount,
+              status,
+              external_reference,
+              provider_reference_id,
+              provider_preference_id,
+              paid_at,
+              payload,
+              updated_at
+            )
+            SELECT
+              i.id,
+              CASE
+                WHEN i.payment_method IN ('MercadoPago', 'MP') THEN 'MERCADO_PAGO'
+                ELSE 'MANUAL'
+              END,
+              COALESCE(i.payment_method, 'MANUAL'),
+              NULL,
+              COALESCE(i.payment_status, 'PENDING'),
+              CAST(i.id AS TEXT),
+              i.mp_payment_id,
+              i.mp_preference_id,
+              i.paid_at,
+              '{}',
+              CURRENT_TIMESTAMP
+            FROM inscriptions i
+            WHERE NOT EXISTS (
+              SELECT 1 FROM payments p WHERE p.inscription_id = i.id
+            )
+          `, (backfillErr) => {
+            if (backfillErr) {
+              console.error('Erro ao popular pagamentos existentes:', backfillErr.message);
+            }
+          });
+        });
+      };
+
+      const ensurePaidAt = () => {
+        if (hasPaidAt) {
+          backfillPayments();
+          return;
+        }
+
+        db.run(`ALTER TABLE inscriptions ADD COLUMN paid_at TEXT`, (alterErr) => {
+          if (alterErr) {
+            console.error('Erro ao adicionar coluna paid_at em inscriptions:', alterErr.message);
+            return;
+          }
+          backfillPayments();
+        });
+      };
+
+      const ensurePaymentStatus = () => {
+        if (hasPaymentStatus) {
+          ensurePaidAt();
+          return;
+        }
+
+        db.run(`ALTER TABLE inscriptions ADD COLUMN payment_status TEXT DEFAULT 'PENDING'`, (alterErr) => {
+          if (alterErr) {
+            console.error('Erro ao adicionar coluna payment_status em inscriptions:', alterErr.message);
+            return;
+          }
+          ensurePaidAt();
+        });
+      };
+
+      const ensureMpPaymentId = () => {
+        if (hasMpPaymentId) {
+          ensurePaymentStatus();
+          return;
+        }
+
+        db.run(`ALTER TABLE inscriptions ADD COLUMN mp_payment_id TEXT`, (alterErr) => {
+          if (alterErr) {
+            console.error('Erro ao adicionar coluna mp_payment_id em inscriptions:', alterErr.message);
+            return;
+          }
+          ensurePaymentStatus();
+        });
+      };
+
+      const ensureMpPreferenceId = () => {
+        if (hasMpPreferenceId) {
+          ensureMpPaymentId();
+          return;
+        }
+
+        db.run(`ALTER TABLE inscriptions ADD COLUMN mp_preference_id TEXT`, (alterErr) => {
+          if (alterErr) {
+            console.error('Erro ao adicionar coluna mp_preference_id em inscriptions:', alterErr.message);
+            return;
+          }
+          ensureMpPaymentId();
+        });
+      };
+
+      ensureMpPreferenceId();
+    });
   });
 
   // Passar db para rotas
@@ -133,8 +306,6 @@ app.use('/leader/login', loginLimiter);
 
 // Usar os roteadores
 app.use('/', publicRouter);
-app.use('/', leaderRouter);
-app.use('/', adminRouter);
 
   // Endpoint para receber notificações do Mercado Pago (webhook)
   app.post('/mp/webhook', (req, res) => {
@@ -188,6 +359,9 @@ app.use('/', adminRouter);
       return res.status(200).send('queued');
     });
   });
+
+  app.use('/', leaderRouter);
+  app.use('/', adminRouter);
 
   // Iniciar worker de processamento assíncrono (opcional)
   const WORKER_INTERVAL_MS = parseInt(process.env.WEBHOOK_WORKER_INTERVAL_MS || '5000', 10);
