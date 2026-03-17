@@ -25,13 +25,12 @@ publicRouter.post('/login', (req, res) => {
 publicRouter.post('/leader/login', (req, res) => {
   const db = req.db;
   const { link_name, password } = req.body;
-  db.get('SELECT * FROM leaders WHERE link_name = ?', [link_name], (err, leader) => {
+  // Selecione apenas as colunas necessárias, incluindo o hash da senha
+  db.get('SELECT id, link_name, password_hash FROM leaders WHERE link_name = ?', [link_name], (err, leader) => {
     if (err) return res.status(500).send('Erro no banco de dados');
-    if (!leader) return res.status(401).render('leader_login', { error: 'Grupo não encontrado' });
-    // Senha global de líder
-    const leaderPass = process.env.LEADER_PASSWORD || 'leaderpass';
-    if (password !== leaderPass) {
-      return res.status(401).render('leader_login', { error: 'Senha do líder inválida' });
+    if (!leader || !bcrypt.compareSync(password, leader.password_hash)) {
+      // Mensagem de erro genérica para não informar se o grupo ou a senha estão incorretos
+      return res.status(401).render('leader_login', { error: 'Grupo ou senha inválidos' });
     }
     req.session.leader = { id: leader.id, link_name: leader.link_name };
     return res.redirect(`/painel/lider/${leader.id}`);
